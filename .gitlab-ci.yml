@@ -26,8 +26,20 @@ restart:
   stage: restart
   script:
     - env HOME=/home/pm2 pm2 restart bot
+  environment:
+    name: restart
+  only:
+    - /RESTART_BOT/
+    - master
+
+restart-manual:
+  stage: restart
+  script:
+    - env HOME=/home/pm2 pm2 restart bot
   when: manual
   environment:
     name: restart
   only:
     - master
+  except:
+    - /RESTART_BOT/

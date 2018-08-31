@@ -6,7 +6,7 @@ stages:
 deploy:
   stage: deploy
   script:
-    - cp -r ./ ${BOT_PATH}
+    - rsync -av ./ ${BOT_PATH} --exclude .git
   environment:
     name: deploy
   only:

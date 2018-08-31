@@ -415,7 +415,7 @@ class Bot extends StandardEventController {
      * @returns {Promise.<Chat>}
      */
     createChat(id) {
-        if (id > 2e9) return Promise.resolve(null);
+        if (id < 2e9) return Promise.resolve(null);
         let chat = new Chat(this, id);
         return this.ctrlEmit((chat) => {
             if (id in this.chats) return this.chats[id];

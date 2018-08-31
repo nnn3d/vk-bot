@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: classes/core/Chat.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: classes/core/Chat.js</h1>
+
+
+
+
+
+
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+
+const BaseEventController = require('../base/BaseEventController');
+const StandardEventController = require('../base/StandardEventController');
+const promiseFactory = require('../../helpers/promiseFactory');
+const Message = require('./Message');
+
+let defaultBot;
+
+class Chat extends StandardEventController {
+
+    /**
+     *
+     * @param {Bot} [bot]
+     * @param {Number} [id]
+     * @return {*}
+     */
+    constructor(bot, id) {
+        super();
+        if (!(bot instanceof BaseEventController)) {
+            if (defaultBot) {
+                this.bot = defaultBot;
+            } else {
+                throw new Error('no bot in new chat constructor');
+            }
+            id = bot;
+        } else {
+            this.bot = bot;
+        }
+        this.id = id;
+        this.adminId = 0;
+        this.title = '';
+        this.name = '';
+        this.secondName = '';
+        this.type = id > 2e9 ? 'chat' : (id &lt; 0 ? 'group' : 'dm');
+        this.users = [];
+        this.allUsers = [];
+        let self = this;
+
+        /**
+         *
+         * @type {Object&lt;{name: String, secondName: String, ?fullName: String}>}
+         */
+        this.userNames = new Proxy({}, {
+            get(target, property) {
+                if (typeof property === 'symbol' || isNaN(property)) return target[property];
+                if (!target[property] &amp;&amp; property in self.users) {
+                    self.bot.vk.api.users.get({ user_ids: property })
+                        .then(users => {
+                            let user = users[0];
+                            self.userNames[property].name = user.first_name || user.name;
+                            self.userNames[property].secondName = user.last_name;
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            target[property] = undefined;
+                        });
+                    target[property] = {};
+                }
+                if (!target[property]) target[property] = {};
+                let info = target[property];
+                if (!info.name) info.name = self.name || property;
+                if (!info.secondName) info.secondName = self.secondName || '';
+                info.fullName = info.name + (info.secondName &amp;&amp; ` ${info.secondName}` || '');
+                return info;
+            }
+        });
+        /**
+         *
+         * @type {Array&lt;ModuleEventController|CoreModuleEventController>}
+         */
+        this.modules = [];
+
+        this.maxMessageLength = 400;
+    }
+
+    static setBot(bot) {
+        defaultBot = bot;
+        return this;
+    }
+
+    /**
+     *
+     * @returns {{create: string, emit: string, noNameEvent: string, newListenerPre: string, newListenerOn: string,
+     *     newListenerAfter: string, newMiddlewarePre: string, newMiddlewareOn: string, removeListenerPre: string,
+     *     removeListenerOn: string, removeListenerAfter: string, removeMiddlewarePre: string, removeMiddlewareOn:
+     *     string, init: string, final: string, addUser: string, removeUser: string, addModule: string, removeModule:
+     *     string, updateChatInfo: string, message.flag.replace: string, message.flag.set: string,
+     *     message.flag.remove: string, message: string, message.read.inbox: string, message.read.outbox: string,
+     *     message.removed: string, chat.action: string, typing.chat: string, chat.create: string, chat.rename: string,
+     *     chat.invite: string, chat.kick: string, chat.photo.update: string, chat.photo.remove: string}}
+     */
+    get eventNames() {
+        let eventNames = super.eventNames;
+        eventNames.init = 'init';
+        eventNames.final = 'final';
+        eventNames.addUser = 'addUser';
+        eventNames.removeUser = 'removeUser';
+        eventNames.addModule = 'addModule';
+        eventNames.removeModule = 'removeModule';
+        eventNames.updateChatInfo = 'updateChatInfo';
+        this._allEvents.map((name) => eventNames[name] = name);
+        return eventNames;
+    }
+
+    /**
+     *
+     * @param {Number} userId
+     * @returns {Promise.&lt;*>}
+     */
+    addUser(userId) {
+        if (!this.allUsers.includes(userId)) this.allUsers.push(userId);
+        return this.ctrlEmit((userId) => {
+            if (!this.users.includes(userId) &amp;&amp; this.bot.selfId !== userId) {
+                this.users.push(userId);
+            } else return null;
+        }, this.eventNames.addUser, userId);
+    }
+
+    /**
+     *
+     * @param {Number} userId
+     * @returns {Promise.&lt;*>}
+     */
+    removeUser(userId) {
+        if (this.allUsers.includes(userId)) this.allUsers.splice(this.allUsers.indexOf(userId), 1);
+        return this.ctrlEmit((userId) => {
+            if (this.users.includes(userId)) {
+                this.users.splice(this.users.indexOf(userId), 1);
+            } else return null;
+        }, this.eventNames.removeUser, userId);
+    }
+
+    /**
+     *
+     * @param {ModuleEventController} module
+     * @returns {Promise.&lt;*>}
+     */
+    addModule(module) {
+        return this.ctrlEmit((module) => {
+            if (!this.modules.includes(module)) {
+                this.modules.push(module);
+                return module.initChat(this);
+            }
+        }, this.eventNames.addModule, module);
+    }
+
+    /**
+     *
+     * @param {ModuleEventController} module
+     * @returns {Promise.&lt;*>}
+     */
+    removeModule(module) {
+        return this.ctrlEmit((module) => {
+            if (this.modules.includes(module)) {
+                this.modules.splice(this.modules.indexOf(module), 1);
+                return module.finalChat(this);
+            }
+        }, this.eventNames.removeModule, module);
+    }
+
+    onAll(event, info) {
+        if (!info) return;
+        let peer = info.peer || info.chat + 2e9;
+        if (this.id === peer) {
+            if (['BaseMessage', 'ChatEvent', 'Message'].includes(info.__proto__.constructor.name)) {
+                info = this.bot.Message.createFromEventMessage(this.bot, info);
+                if (info.text) {
+                    info.text = info.text.replace(/[,"'{}()]/g, ' ');
+                    // info.text = info.text.replace(/\./g, '. ');
+                    info.text = info.text.replace(/ +/g, ' ');
+                    info.text = info.text.trim();
+                }
+                return this.emit(event, info);
+            } else return this.emit(event, info);
+        }
+    }
+
+    _onInvite(info) {
+        if (info.peer === this.id) {
+            return this.bot.vk.api.users.get({ user_ids: info.invite })
+                .then((users) => {
+                    let user = users[0];
+                    if (user) {
+                        this.userNames[info.invite].name = user.first_name || user.name;
+                        this.userNames[info.invite].secondName = user.last_name;
+                    }
+                    return this.addUser(info.invite)
+                });
+        }
+    }
+
+    _onKick(info) {
+        if (info.peer === this.id) {
+            return this.removeUser(info.kick).then(removed => {
+                if (removed !== null) {
+                    delete this.userNames[info.kick];
+                }
+            });
+        }
+    }
+
+    _onRename(info) {
+        if (info.peer === this.id)
+            this.title = info.title;
+    }
+
+    /**
+     *
+     * @param {Boolean} log
+     * @returns {Promise}
+     * @private
+     */
+    _updateChatInfo(log = true) {
+        if (this.type !== 'chat') return Promise.resolve(null);
+        return this.ctrlEmit(() => {
+            let promises = [];
+            if (log) console.log('update chat', this.id, 'info');
+            return this.bot.vk.api.messages.getChat({
+                chat_id: this.id - 2e9,
+                fields: 'nickname',
+            }).then((chatInfo) => {
+                chatInfo.users = chatInfo.users.filter(userInfo => userInfo.type === 'profile');
+                let users = chatInfo.users.map(userInfo => userInfo.id);
+                let promiseEvents = [];
+                this.users.forEach(user => {
+                    if (!users.includes(user)) promiseEvents.push(this.removeUser(user));
+                });
+                users.forEach(user => {
+                    if (!this.users.includes(user)) promiseEvents.push(this.addUser(user));
+                });
+                this.title = chatInfo.title;
+                this.adminId = chatInfo.admin_id;
+                return promiseFactory.allAsync(promiseEvents).then(() => {
+                    for (let user of chatInfo.users) {
+                        if (this.users.includes(user.id)) {
+                            this.userNames[user.id].name = user.first_name;
+                            this.userNames[user.id].secondName = user.last_name;
+                        }
+                    }
+                });
+            });
+        }, this.eventNames.updateChatInfo);
+    }
+
+    /**
+     *
+     * @returns {Array&lt;String>}
+     * @private
+     */
+    get _allEvents() {
+        return ['message', 'chat.action', 'chat.create', 'chat.rename', 'chat.invite',
+            'chat.kick', 'chat.photo.update', 'chat.photo.remove', 'chat.pin', 'chat.unpin'];
+        // return ['message.flag.replace', 'message.flag.set', 'message.flag.remove', 'message',
+        //     'message.read.inbox', 'message.read.outbox', 'message.removed', 'chat.action',
+        //     'typing.chat', 'chat.create', 'chat.rename', 'chat.invite', 'chat.kick', 'chat.photo.update',
+        //     'chat.photo.remove'];
+    }
+
+    _init() {
+        console.log('init chat ', this.id);
+        let promises = [];
+        this._allEvents.forEach((event) => {
+            promises.push(this.bot.on(event, (...args) => this.onAll(event, ...args), this));
+        });
+        if (this.type !== 'chat') {
+            this.users = [this.id];
+            return this.bot.vk.api.users.get({ user_ids: this.id })
+                .then(users => {
+                    let user = users[0];
+                    this.name = user.first_name;
+                    this.secondName = user.last_name;
+                    this.title = `${this.name} ${this.secondName}`;
+                });
+        }
+        promises.push(this.on(this.eventNames['chat.invite'], this._onInvite, this));
+        promises.push(this.on(this.eventNames['chat.kick'], this._onKick, this));
+        promises.push(this.on(this.eventNames['chat.rename'], this._onRename, this));
+        promises.push(this._updateChatInfo(false));
+        return promiseFactory.allAsync(promises);
+    }
+
+    _final() {
+        let promises = [];
+        this._allEvents.forEach((event) => {
+            promises.push(this.bot.removeListenersOnByHandler(event, this));
+        });
+        promises.push(this.removeListenersOnByHandler(this.eventNames['chat.invite'], this));
+        promises.push(this.removeListenersOnByHandler(this.eventNames['chat.kick'], this));
+        promises.push(this.removeListenersOnByHandler(this.eventNames['chat.kick'], this));
+        return promiseFactory.allAsync(promises);
+    }
+
+    init() {
+        return this.ctrlEmit(() => this._init(), this.eventNames.init);
+    }
+
+    final() {
+        return this.ctrlEmit(() => this._final(), this.eventNames.final);
+    }
+
+
+    findUser(nameOrId) {
+        let userId;
+        if (!nameOrId) return;
+        if (this.users.includes(+nameOrId)) return +nameOrId;
+        let nameExp = new RegExp(`^${nameOrId}`, 'i');
+        this.users.forEach(user => {
+            if (nameExp.test(`${this.userNames[user].name} ${this.userNames[user].secondName}`)
+                || nameExp.test(`${this.userNames[user].secondName} ${this.userNames[user].name}`)
+                || nameExp.test(user)) {
+                userId = user;
+            }
+        });
+        return userId;
+    }
+
+}
+
+module.exports = Chat;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BaseEventController.html">BaseEventController</a></li><li><a href="Bot.html">Bot</a></li><li><a href="Chat.html">Chat</a></li><li><a href="EventInfo.html">EventInfo</a></li><li><a href="Message.html">Message</a></li><li><a href="module.exports_module.exports.html">exports</a></li><li><a href="ModuleEventController.html">ModuleEventController</a></li><li><a href="StandardEventController.html">StandardEventController</a></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Mar 04 2018 01:40:39 GMT+0300 (RTZ 2 (зима))
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

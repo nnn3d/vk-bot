@@ -1,0 +1,70 @@
+{
+  "name": "torchmetbot",
+  "version": "1.5.0",
+  "description": "vkbot",
+  "main": "index.js",
+  "dependencies": {
+    "bluebird": "^3.5.0",
+    "cheerio": "^0.22.0",
+    "debug": "^3.0.0",
+    "iconv-lite": "^0.4.17",
+    "request-promise": "^4.2.1",
+    "body-parser": "^1.18.2",
+    "cookie-parser": "^1.4.3",
+    "express": "^4.16.3",
+    "fuse.js": "^3.2.0",
+    "mongodb": "^2.2.14",
+    "mongoose": "^4.13.5",
+    "pm2": "^2.8.0",
+    "pmx": "^1.5.5",
+    "quiche": "^0.3.0",
+    "request": "^2.85.0",
+    "vk-io": "^3.2.0",
+    "yandex-money-sdk": "^0.1.7",
+    "xml": "^1.0.1"
+  },
+  "scripts": {
+    "test": "mocha ./test/**/*.test.js",
+    "start": "node testLaunch.js",
+    "web-build": "webpack -p --config ./coreModules/Web/wpc.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nnn3d/torchmetbot.git"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/nnn3d/torchmetbot/issues"
+  },
+  "homepage": "https://github.com/nnn3d/torchmetbot#readme",
+  "devDependencies": {
+    "babel-core": "^6.21.0",
+    "babel-loader": "^6.2.10",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-es2015": "^6.18.0",
+    "babel-preset-react": "^6.16.0",
+    "bootstrap": "^4.0.0-alpha.6",
+    "chai": "^4.1.0",
+    "css-loader": "^0.28.7",
+    "dotenv": "^4.0.0",
+    "jquery": "^3.2.1",
+    "js-cookie": "^2.1.4",
+    "mocha": "^3.4.2",
+    "popper.js": "^1.13.0",
+    "prop-types": "^15.6.0",
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0",
+    "react-icons": "^2.2.7",
+    "react-refetch": "^1.0.1",
+    "react-s-alert": "^1.3.1",
+    "react-slidedown": "^1.2.0",
+    "react-widgets": "^4.0.2",
+    "reactstrap": "^4.8.0",
+    "script-loader": "^0.7.2",
+    "style-loader": "^0.19.0",
+    "url-loader": "^0.6.2",
+    "vk-openapi": "^0.1.2",
+    "webpack": "^1.14.0"
+  }
+}

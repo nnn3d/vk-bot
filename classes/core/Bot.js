@@ -1,5 +1,5 @@
 'use strict';
-
+// test change
 const StandardEventController = require('../base/StandardEventController');
 const VK = require('../../vk');
 const Chat = require('../core/Chat');

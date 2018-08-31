@@ -1,0 +1,33 @@
+stages:
+  - deploy
+  - update
+  - restart
+
+deploy:
+  stage: deploy
+  script:
+    - cp -r ./ ${BOT_PATH}
+  environment:
+    name: deploy
+  only:
+    - master
+
+update:
+  stage: deploy
+  script:
+    - cd ${BOT_PATH}
+    - yarn install
+  environment:
+    name: deploy
+  only:
+    - master
+
+restart:
+  stage: restart
+  script:
+    - pm2 restart bot
+  when: manual
+  environment:
+    name: restart
+  only:
+    - master

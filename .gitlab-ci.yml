@@ -13,7 +13,7 @@ deploy:
     - master
 
 update:
-  stage: deploy
+  stage: update
   script:
     - cd ${BOT_PATH}
     - yarn install

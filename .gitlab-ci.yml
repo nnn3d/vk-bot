@@ -18,7 +18,7 @@ update:
     - cd ${BOT_PATH}
     - yarn install
   environment:
-    name: deploy
+    name: update
   only:
     - master
 

@@ -1,0 +1,75 @@
+.widget-container {
+    padding-top: 40px;
+    padding-bottom: 40px;
+}
+
+.widget-container__select {
+    cursor: pointer;
+}
+
+.widget-container__select > * {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.widget-container__select:before {
+    /*content: '';*/
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 10px 15px;
+    border: 1px #ccc solid;
+    border-radius: 5px;
+}
+
+.widget-container__select:after {
+    content: 'переместить сюда';
+    display: block;
+    position: absolute;
+    top: calc(50% - 10px);
+    left: 0;
+    right: 0;
+    cursor: pointer;
+    margin: auto;
+    width: 200px;
+    text-align: center;
+    background: #007bff;
+    color: white;
+    padding: 5px 0 5px;
+    border-radius: 3px;
+    opacity: .7;
+    transition: opacity .2s;
+}
+
+.widget-container__select:hover:after {
+    opacity: .99;
+}
+
+.widget-container__minimized {
+    cursor: pointer;
+    opacity: .7;
+}
+
+.widget-container__minimized > * {
+    pointer-events: none;
+}
+
+.widget-container__sections {
+    flex-wrap: wrap;
+    overflow: hidden;
+    padding: 15px;
+}
+
+.widget-container__sections > * {
+    flex-grow: 1 !important;
+    margin-left: 0 !important;
+    border-radius: 0;
+}
+
+.widget-container__error {
+    text-align: center;
+    padding: 40px 0;
+}

@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500&subset=cyrillic-ext');
+
+body {
+    overflow: visible !important;
+}
+
+.app {
+    font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif;
+    max-height: 100vh;
+    overflow-y: auto;
+}
+
+.app a:hover, .app button:hover {
+    cursor: pointer;
+}
+
+body {
+    overflow-y: scroll;
+}
+
+* {
+ outline: none !important;
+}
+
+.react-slidedown {
+    transition-duration: .2s !important;
+}

@@ -1,0 +1,11 @@
+.menu__navbar {
+    background-color: #f0a526;
+    color: #fff;
+}
+
+.menu__brand {
+    width: calc(100% - 72px);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}

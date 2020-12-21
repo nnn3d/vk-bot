@@ -1,0 +1,30 @@
+.loader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.loader__inner {
+    display: inline-block;
+}
+
+.loader__spinner > * {
+    display: inline-block;
+    margin-top: -3px;
+    animation: load 1s infinite linear;
+}
+
+.loader__text {
+    margin-left: 5px;
+}
+
+@keyframes load {
+    from {
+        transform: rotate(0);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

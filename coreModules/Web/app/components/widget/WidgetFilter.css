@@ -1,0 +1,20 @@
+.widget-filter {
+    border-bottom: 1px solid #ccc;
+    padding: 0 5px;
+}
+
+.widget-filter_action {
+    border-bottom: none;
+}
+
+.widget-filter__filter {
+    margin: 10px 0;
+}
+
+.widget-filter__wide-btn-group {
+    width: 100%;
+}
+
+.widget-filter__wide-btn {
+    flex-grow: 1 !important;
+}
